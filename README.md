@@ -34,13 +34,27 @@ and a compromised workflow could create AWS accounts on the bill.
 ```text
 DEV ACCOUNT
   S3 lakeworks-<env>-lake-<account>    versioned · encrypted · prevent_destroy
+      raw/{domain}/{dataset}/           whatever the source gave
+      warehouse/{layer}/{domain}/       Iceberg-managed
       tmp/                              expires after 7 days
   S3 lakeworks-<env>-ops-<account>    encrypted
+      artifacts/ · logs/
       athena-results/                   expires after 30 days
       terraform-plans/                  expires after 30 days
+
+  Glue  lakeworks_<env>_<domain>_<layer>     one per domain x layer
+  IAM   lakeworks-<env>-platform-plan-role   read-only, assumed from management
+  SSM   /lakeworks/<env>/platform/...        what pipeline repos read
 ```
 
 Both buckets block public access outright and abort incomplete multipart uploads after seven days.
+
+**`raw` has no catalog database.** It holds whatever the source gave, in whatever shape it arrived.
+A schema over it would be a claim nothing enforces, so the catalog starts at `bronze`.
+
+**Nothing outside a Spark or PyIceberg commit writes under `warehouse/`.** A stray `aws s3 cp`
+there produces files the table metadata does not know about, which is the commonest way a lakehouse
+is corrupted.
 
 **Two buckets, not one per layer.** Lake Formation grants at table granularity anyway, so a bucket
 per layer multiplies the policy surface for a boundary the catalog already draws. The split that
@@ -57,6 +71,24 @@ builds a name by joining strings.
 The module uses two separators on purpose. AWS resource names take hyphens. Anything SQL touches
 takes underscores, because a hyphenated identifier forces quoting in Athena and Spark on every query
 rather than once at the point it is named.
+
+## How a pipeline repo finds any of this
+
+Through SSM Parameter Store, never through `terraform_remote_state`.
+
+```text
+/lakeworks/{env}/platform/lake_bucket
+/lakeworks/{env}/platform/ops_bucket
+/lakeworks/{env}/platform/glue_database/{domain}/{layer}
+```
+
+Remote state would give every consumer read access to this whole state file rather than to the one
+value it asked for, and it would couple each of them to output names that are this repo's business.
+A parameter grants exactly one value.
+
+The database paths are nested by domain so a pipeline can read its own layers with a single
+`GetParametersByPath` on `/lakeworks/{env}/platform/glue_database/{domain}/`, without being granted
+the platform prefix as a whole.
 
 ## First run
 
@@ -86,14 +118,20 @@ resource anywhere else is that SCP about to reject it.
 Applies are run by hand. CI exists to post a plan on a pull request so the diff is read before it is
 real — a role that could apply would make that review advisory.
 
-Three repository variables have to be set once. None is a secret, and none belongs in a tracked
-file: an account id in a workflow is a permanent disclosure in a public repo.
+Four repository variables have to be set once. None is a secret, and none belongs in a tracked file:
+an account id in a workflow is a permanent disclosure in a public repo.
 
 ```bash
-gh variable set AWS_PLAN_ROLE_ARN --body "arn:aws:iam::<management-account>:role/lakeworks-github-plan"
-gh variable set TF_STATE_BUCKET   --body "lakeworks-tfstate-<management-account>"
-gh variable set DEV_ACCOUNT_ID    --body "<dev account id>"
+gh variable set AWS_PLAN_ROLE_ARN     --body "arn:aws:iam::<management-account>:role/lakeworks-github-plan"
+gh variable set TF_STATE_BUCKET       --body "lakeworks-tfstate-<management-account>"
+gh variable set DEV_ACCOUNT_ID        --body "<dev account id>"
+gh variable set MANAGEMENT_ACCOUNT_ID --body "<management account id>"
 ```
+
+The plan job needs two applies behind it before it can succeed. `lakeworks-github-plan` in
+management must be permitted to assume into this account, which is bootstrap's apply, and the
+read-only role it assumes must exist, which is this repo's. Until both have run the credentials
+step fails and no plan is posted.
 
 `.github/workflows/plan.yml` assumes the plan-only role in management, runs `terraform plan`, and
 posts the output to the pull request. `.github/workflows/validate.yml` runs `fmt`, `validate` and

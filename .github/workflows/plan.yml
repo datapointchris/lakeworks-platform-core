@@ -51,6 +51,7 @@ jobs:
           set -o pipefail
           terraform plan -no-color -input=false \
             -var "dev_account_id=${{ vars.DEV_ACCOUNT_ID }}" \
+            -var "management_account_id=${{ vars.MANAGEMENT_ACCOUNT_ID }}" \
             2>&1 | tee plan.txt
         continue-on-error: true
 

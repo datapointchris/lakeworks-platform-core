@@ -3,3 +3,7 @@
 # The member account the lakehouse is created in. providers.tf asserts the resolved
 # account matches this, so a misdirected assume-role fails at plan rather than at a bill.
 dev_account_id = "000000000000"
+
+# Where state and the GitHub Actions plan role live. The read-only role created here
+# trusts that account's plan role, and nothing else.
+management_account_id = "000000000000"

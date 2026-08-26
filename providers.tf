@@ -25,7 +25,7 @@ check "running_in_the_dev_account" {
 }
 
 module "naming" {
-  source = "git::https://github.com/datapointchris/terraform-aws-lakeworks-naming.git?ref=v0.1.0"
+  source = "git::https://github.com/datapointchris/terraform-aws-lakeworks-naming.git?ref=v0.2.0"
 
   env        = var.env
   domain     = "platform"
