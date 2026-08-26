@@ -42,7 +42,7 @@ DEV ACCOUNT
       athena-results/                   expires after 30 days
       terraform-plans/                  expires after 30 days
 
-  Glue  lakeworks_<env>_<domain>_<layer>     one per domain x layer
+  Glue  lakeworks_<env>_<domain>_<layer>     one per domain team x layer
   IAM   lakeworks-<env>-platform-plan-role   read-only, assumed from management
   SSM   /lakeworks/<env>/platform/...        what pipeline repos read
 ```
@@ -51,6 +51,10 @@ Both buckets block public access outright and abort incomplete multipart uploads
 
 **`raw` has no catalog database.** It holds whatever the source gave, in whatever shape it arrived.
 A schema over it would be a claim nothing enforces, so the catalog starts at `bronze`.
+
+**`platform` has no catalog databases either.** It is infrastructure rather than a domain team, and
+a medallion stack describes a domain team's pipeline. It remains a valid `lakeworks:domain` tag
+value, because platform resources still need cost attribution.
 
 **Nothing outside a Spark or PyIceberg commit writes under `warehouse/`.** A stray `aws s3 cp`
 there produces files the table metadata does not know about, which is the commonest way a lakehouse

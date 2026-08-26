@@ -6,10 +6,15 @@
 # arrived, and a schema over it would be a claim nothing enforces.
 
 locals {
+  # `platform` is infrastructure rather than a domain team, and a medallion stack describes a
+  # domain team's pipeline. It stays in var.domains because it is a valid tag value for cost
+  # attribution, and is filtered here so it does not acquire four databases nothing writes to.
+  catalog_domains = [for domain in var.domains : domain if domain != "platform"]
+
   # Keyed `{domain}_{layer}` to match the database name's own separator. The key is what every
   # resource below is addressed by, so it appears in state, in plan output and in the SSM path.
   catalog_databases = {
-    for pair in setproduct(var.domains, var.layers) :
+    for pair in setproduct(local.catalog_domains, var.layers) :
     "${pair[0]}_${pair[1]}" => {
       domain = pair[0]
       layer  = pair[1]
