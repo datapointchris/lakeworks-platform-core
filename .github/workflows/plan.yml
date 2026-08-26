@@ -1,0 +1,89 @@
+# Plan on PR is the review mechanism for this repo, not a CI nicety. Applies are run by hand, so
+# the plan posted here is where a change is actually seen before it becomes real.
+#
+# ORDERING: this assumes `lakeworks-github-plan` in the management account, which then assumes the
+# read-only role this repo creates in dev. Until that role exists and management is permitted to
+# assume it, the credentials step fails and no plan is produced.
+name: Plan
+
+on:
+  pull_request:
+
+# id-token for OIDC, pull-requests to post the plan back. Deliberately no `contents: write`.
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+concurrency:
+  # One plan per PR. A second push while a plan is running would race for the state lock.
+  group: plan-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  plan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # Repository variables throughout, never literals. An account id in a workflow file is a
+          # permanent disclosure in a public repo and a rename away from breaking.
+          role-to-assume: ${{ vars.AWS_PLAN_ROLE_ARN }}
+          aws-region: us-east-2
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_wrapper: false
+
+      - run: terraform fmt -check -recursive
+
+      # The backend is partial: the state bucket name carries the management account id, so it is
+      # supplied here rather than written into backend.tf.
+      - run: terraform init -input=false -backend-config="bucket=${{ vars.TF_STATE_BUCKET }}"
+
+      - run: terraform validate
+
+      - name: plan
+        id: plan
+        run: |
+          set -o pipefail
+          terraform plan -no-color -input=false \
+            -var "dev_account_id=${{ vars.DEV_ACCOUNT_ID }}" \
+            2>&1 | tee plan.txt
+        continue-on-error: true
+
+      - name: comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let plan = fs.readFileSync('plan.txt', 'utf8');
+            // A PR comment caps at 65536 characters. Truncate from the front so the summary line,
+            // which terraform prints last, always survives.
+            const cap = 60000;
+            if (plan.length > cap) {
+              plan = '...truncated, see the workflow log for the full plan...\n\n' + plan.slice(-cap);
+            }
+            const body = [
+              '### Terraform plan — `' + '${{ steps.plan.outcome }}' + '`',
+              '',
+              '<details><summary>Show plan</summary>',
+              '',
+              '```terraform',
+              plan,
+              '```',
+              '',
+              '</details>',
+            ].join('\n');
+            await github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body,
+            });
+
+      - name: fail if the plan failed
+        if: steps.plan.outcome == 'failure'
+        run: exit 1

@@ -1,0 +1,5 @@
+# Copy to terraform.tfvars (gitignored) and fill in.
+
+# The member account the lakehouse is created in. providers.tf asserts the resolved
+# account matches this, so a misdirected assume-role fails at plan rather than at a bill.
+dev_account_id = "000000000000"

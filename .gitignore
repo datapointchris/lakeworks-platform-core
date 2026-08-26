@@ -1,0 +1,13 @@
+# Holds the account ids this root module applies into. Never committed —
+# terraform.tfvars.example carries the shape with placeholders instead.
+terraform.tfvars
+
+*.tfplan
+plan.txt
+
+# State lives in S3. A local state file here is a stray from a misconfigured init
+# and must never reach the repo.
+*.tfstate*
+.terraform/
+
+.planning
