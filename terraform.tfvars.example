@@ -7,3 +7,10 @@ dev_account_id = "000000000000"
 # Where state and the GitHub Actions plan role live. The read-only role created here
 # trusts that account's plan role, and nothing else.
 management_account_id = "000000000000"
+
+# The role assumed in the member account. Leave this out and it resolves to the read-only
+# plan role, which can plan and cannot create — that is the path CI takes, because CI has
+# no tfvars. A by-hand apply needs to create things, so it names an administrative role
+# here. On the very first apply this is the only option, since the read-only role does not
+# exist until that apply creates it.
+assume_role_name = "OrganizationAccountAccessRole"

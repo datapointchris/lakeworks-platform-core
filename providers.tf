@@ -4,8 +4,12 @@
 provider "aws" {
   region = var.region
 
+  # Defaults to the read-only role created in iam.tf, so CI plans as the identity that exists for
+  # planning. An apply has to create things and a read-only role cannot, so a by-hand run names an
+  # administrative role in terraform.tfvars instead. CI has no tfvars, which is what makes the
+  # read-only path the one that needs no one to remember it.
   assume_role {
-    role_arn = "arn:aws:iam::${var.dev_account_id}:role/OrganizationAccountAccessRole"
+    role_arn = "arn:aws:iam::${var.dev_account_id}:role/${coalesce(var.assume_role_name, module.naming.plan_role)}"
   }
 
   default_tags {

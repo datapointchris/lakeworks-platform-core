@@ -96,11 +96,16 @@ the platform prefix as a whole.
 
 ## First run
 
-The two account ids are not in the repo. `terraform.tfvars` is gitignored and
+The account ids are not in the repo. `terraform.tfvars` is gitignored and
 `terraform.tfvars.example` carries the shape.
 
+That file is also what separates a by-hand run from CI. It names an administrative role to assume in
+the member account, because an apply creates things and the read-only role cannot. CI has no
+`terraform.tfvars`, so it takes the default and plans as the read-only role — the safe path is the
+one nobody has to remember.
+
 ```bash
-cp terraform.tfvars.example terraform.tfvars    # fill in the two account ids
+cp terraform.tfvars.example terraform.tfvars    # account ids, and the role to assume
 
 # The backend is partial: the state bucket name carries the management account id,
 # so it is supplied at init rather than written into backend.tf.
@@ -132,17 +137,30 @@ gh variable set DEV_ACCOUNT_ID        --body "<dev account id>"
 gh variable set MANAGEMENT_ACCOUNT_ID --body "<management account id>"
 ```
 
-Three things in the management account gate the plan job, and the credentials step fails until all
-three hold:
+Three things gate the plan job, and they fail at two different steps rather than one.
 
-1. The CI role's OIDC trust condition matches the subject GitHub presents for this repository.
-   That subject carries a numeric owner id and repository id, so a condition written for a plain
-   `owner/repo` string does not match it.
-2. That role is permitted to `sts:AssumeRole` onto the read-only role in this account.
-3. The read-only role exists, which is this repo's own first apply.
+```text
+credentials step          the OIDC trust condition on the CI role
+  plan.yml                  matches the subject GitHub presents
+                            ↳ lives in bootstrap
 
-The first two live in the bootstrap repository. Nothing here can substitute for them, and pointing
-this workflow at an administrative role instead would give a compromised workflow that access.
+terraform plan            the CI role may sts:AssumeRole onto this account
+  three steps later         the grant matches lakeworks-*-plan-role
+                            ↳ lives in bootstrap
+
+                          the read-only role exists
+                            ↳ this repo's own first apply
+```
+
+The subject GitHub presents carries a numeric owner id and repository id, so a trust condition
+written for a plain `owner/repo` string never matches it.
+
+The grant matching on `lakeworks-*-plan-role` is why this role's name is not free to change. A
+rename that left that pattern would leave CI unable to assume it, so `catalog.tftest.hcl` asserts
+the shape.
+
+The first two live in the bootstrap repository. Nothing here substitutes for them, and pointing this
+workflow at an administrative role instead would give a compromised workflow that access.
 
 `.github/workflows/plan.yml` assumes the plan-only role in management, runs `terraform plan`, and
 posts the output to the pull request. `.github/workflows/validate.yml` runs `fmt`, `validate` and

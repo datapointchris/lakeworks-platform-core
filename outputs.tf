@@ -17,6 +17,6 @@ output "glue_databases" {
 }
 
 output "plan_role_arn" {
-  description = "Set this as the role the CI plan job assumes into this account."
+  description = "The role CI plans as. providers.tf resolves it by default, so nothing has to be configured to point at it; this is here to confirm what was created and to read its name back."
   value       = aws_iam_role.plan.arn
 }
