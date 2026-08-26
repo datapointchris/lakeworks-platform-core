@@ -132,10 +132,17 @@ gh variable set DEV_ACCOUNT_ID        --body "<dev account id>"
 gh variable set MANAGEMENT_ACCOUNT_ID --body "<management account id>"
 ```
 
-The plan job needs two applies behind it before it can succeed. `lakeworks-github-plan` in
-management must be permitted to assume into this account, which is bootstrap's apply, and the
-read-only role it assumes must exist, which is this repo's. Until both have run the credentials
-step fails and no plan is posted.
+Three things in the management account gate the plan job, and the credentials step fails until all
+three hold:
+
+1. The CI role's OIDC trust condition matches the subject GitHub presents for this repository.
+   That subject carries a numeric owner id and repository id, so a condition written for a plain
+   `owner/repo` string does not match it.
+2. That role is permitted to `sts:AssumeRole` onto the read-only role in this account.
+3. The read-only role exists, which is this repo's own first apply.
+
+The first two live in the bootstrap repository. Nothing here can substitute for them, and pointing
+this workflow at an administrative role instead would give a compromised workflow that access.
 
 `.github/workflows/plan.yml` assumes the plan-only role in management, runs `terraform plan`, and
 posts the output to the pull request. `.github/workflows/validate.yml` runs `fmt`, `validate` and

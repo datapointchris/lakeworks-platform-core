@@ -12,7 +12,7 @@ output "ops_bucket" {
 }
 
 output "glue_databases" {
-  description = "Catalog database name for each domain and layer, keyed {domain}_{layer}."
+  description = "Catalog database name for each domain team and layer, keyed {domain}_{layer}."
   value       = { for k, db in aws_glue_catalog_database.this : k => db.name }
 }
 

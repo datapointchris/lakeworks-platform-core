@@ -1,4 +1,4 @@
-# One Glue database per (domain, layer). The catalog is where the layer boundary is actually
+# One Glue database per (domain team, layer). The catalog is where the layer boundary is actually
 # drawn — a grant, a query and a job all address a table through it, which is why the buckets do
 # not need to be split per layer as well.
 #
