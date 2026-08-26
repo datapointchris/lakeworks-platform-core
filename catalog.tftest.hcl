@@ -72,19 +72,23 @@ run "parameter_paths" {
 run "domain_resources_carry_their_own_domain_and_layer" {
   command = plan
 
+  # `try` in both halves, because the defect this catches is the tags block being absent, and
+  # indexing a null map raises a Terraform error rather than failing the assertion. Without it the
+  # diagnostic for the exact regression under test is "Attempt to index null value" instead of the
+  # tag that was wrong.
   assert {
-    condition     = aws_glue_catalog_database.this["animal_bronze"].tags["lakeworks:domain"] == "animal"
-    error_message = "database domain tag: ${aws_glue_catalog_database.this["animal_bronze"].tags["lakeworks:domain"]}"
+    condition     = try(aws_glue_catalog_database.this["animal_bronze"].tags["lakeworks:domain"], "<absent>") == "animal"
+    error_message = "database domain tag: ${try(aws_glue_catalog_database.this["animal_bronze"].tags["lakeworks:domain"], "<absent>")}"
   }
 
   assert {
-    condition     = aws_glue_catalog_database.this["animal_bronze"].tags["lakeworks:layer"] == "bronze"
-    error_message = "database layer tag: ${aws_glue_catalog_database.this["animal_bronze"].tags["lakeworks:layer"]}"
+    condition     = try(aws_glue_catalog_database.this["animal_bronze"].tags["lakeworks:layer"], "<absent>") == "bronze"
+    error_message = "database layer tag: ${try(aws_glue_catalog_database.this["animal_bronze"].tags["lakeworks:layer"], "<absent>")}"
   }
 
   assert {
-    condition     = aws_ssm_parameter.glue_database["animal_bronze"].tags["lakeworks:domain"] == "animal"
-    error_message = "parameter domain tag: ${aws_ssm_parameter.glue_database["animal_bronze"].tags["lakeworks:domain"]}"
+    condition     = try(aws_ssm_parameter.glue_database["animal_bronze"].tags["lakeworks:domain"], "<absent>") == "animal"
+    error_message = "parameter domain tag: ${try(aws_ssm_parameter.glue_database["animal_bronze"].tags["lakeworks:domain"], "<absent>")}"
   }
 }
 
