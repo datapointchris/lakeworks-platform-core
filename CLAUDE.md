@@ -1,10 +1,7 @@
-# CLAUDE.md
+# lakeworks-platform-core
 
-Guidance for Claude Code working in this repository.
-
-Read the README first. It carries what this creates, why `raw` gets no catalog database, why the
-cross-repo seam is SSM rather than remote state, and why `prevent_destroy` guards one bucket and
-not the other.
+The README carries what this creates, why `raw` gets no catalog database, why the cross-repo seam
+is SSM rather than remote state, and why `prevent_destroy` guards one bucket and not the other.
 
 ## Plan, never apply
 
