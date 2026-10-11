@@ -9,5 +9,3 @@ plan.txt
 # and must never reach the repo.
 *.tfstate*
 .terraform/
-
-.planning
