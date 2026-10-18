@@ -16,7 +16,7 @@ variable "region" {
 }
 
 variable "dev_account_id" {
-  description = "The member account this applies into. providers.tf refuses to run if the assume-role lands elsewhere."
+  description = "The member account this applies into. The provider's role ARN is built from it, and a check in providers.tf warns if the resolved account differs."
   type        = string
 
   validation {

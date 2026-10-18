@@ -1,9 +1,10 @@
 # Plan on PR is the review mechanism for this repo, not a CI nicety. Applies are run by hand, so
 # the plan posted here is where a change is actually seen before it becomes real.
 #
-# ORDERING: this assumes `lakeworks-github-plan` in the management account, which then assumes the
-# read-only role this repo creates in dev. Until that role exists and management is permitted to
-# assume it, the credentials step fails and no plan is produced.
+# ORDERING: the credentials step assumes `lakeworks-github-plan` in the management account. The AWS
+# provider assumes the read-only role this repo creates in dev during `terraform plan`. Until that
+# role exists and management is permitted to assume it, the credentials step succeeds and the plan
+# step fails at that assume-role. The error is posted to the pull request and the job fails.
 name: Plan
 
 on:

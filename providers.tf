@@ -19,8 +19,10 @@ provider "aws" {
 
 data "aws_caller_identity" "current" {}
 
-# Refuses to run if the assume-role landed somewhere other than the account named in tfvars.
-# Creating a lake in the wrong account is not something to find out from a bill.
+# Compares the account the assume-role resolved to against the one named in tfvars. The role ARN
+# above is built from dev_account_id, so a run lands in that account or fails at the assume-role.
+# A failed check is a warning under the plan and does not stop an apply, so the plan's warnings are
+# read before applying. Under `terraform test` a failed check fails the run.
 check "running_in_the_dev_account" {
   assert {
     condition     = data.aws_caller_identity.current.account_id == var.dev_account_id
