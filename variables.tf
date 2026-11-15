@@ -56,6 +56,6 @@ variable "layers" {
   # this the layer model is an invariant that four comments assert and nothing enforces.
   validation {
     condition     = !contains(var.layers, "raw")
-    error_message = "raw gets no catalog database. It holds whatever the source gave and is never a table."
+    error_message = "layers is ${jsonencode(var.layers)}, set in terraform.tfvars or with -var, and it includes raw. raw gets no catalog database, because it holds whatever the source gave and is never a table. Remove raw from layers and keep only layers the naming module accepts, starting at bronze."
   }
 }
