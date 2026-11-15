@@ -118,3 +118,37 @@ run "raw_is_refused_rather_than_described" {
 
   expect_failures = [var.layers]
 }
+
+# env becomes part of every resource name and every SSM path a pipeline reads, so an environment
+# outside the two this repo plans for is refused before anything is named from it.
+run "an_unknown_env_is_refused" {
+  command = plan
+
+  variables {
+    env = "staging"
+  }
+
+  expect_failures = [var.env]
+}
+
+# Both account ids are typed by hand into terraform.tfvars or passed with -var. A dropped digit or
+# the console's hyphenated display form would build a role ARN for an account that does not exist.
+run "a_dev_account_id_that_is_not_12_digits_is_refused" {
+  command = plan
+
+  variables {
+    dev_account_id = "11111111111"
+  }
+
+  expect_failures = [var.dev_account_id]
+}
+
+run "a_management_account_id_that_is_not_12_digits_is_refused" {
+  command = plan
+
+  variables {
+    management_account_id = "2222-2222-2222"
+  }
+
+  expect_failures = [var.management_account_id]
+}
