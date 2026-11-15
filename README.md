@@ -144,10 +144,9 @@ component, and it is where the account id enters a name.
 The two separators are deliberate. A hyphenated identifier forces quoting in Athena and Spark on
 every query, rather than once at the point it is named.
 
-The module is instantiated twice at one tag. `providers.tf` holds the platform-level instance.
-`catalog.tf` holds a layer-scoped instance per database, because a database name and a warehouse
-prefix need a layer. Terraform takes `source` only as a literal, so a pin bump edits both files and
-the two tags must agree.
+One `module "naming"` block in `providers.tf` holds the tag, so a pin bump is one edit. Its
+`for_each` makes a platform-level instance under the key `platform`, and a layer-scoped instance per
+catalog database, because a database name and a warehouse prefix need a layer.
 
 ## SSM — the seam pipeline repos read, never this state
 

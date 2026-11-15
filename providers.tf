@@ -9,11 +9,11 @@ provider "aws" {
   # administrative role in terraform.tfvars instead. CI has no tfvars, which is what makes the
   # read-only path the one that needs no one to remember it.
   assume_role {
-    role_arn = "arn:aws:iam::${var.dev_account_id}:role/${coalesce(var.assume_role_name, module.naming.plan_role)}"
+    role_arn = "arn:aws:iam::${var.dev_account_id}:role/${coalesce(var.assume_role_name, module.naming["platform"].plan_role)}"
   }
 
   default_tags {
-    tags = module.naming.tags
+    tags = module.naming["platform"].tags
   }
 }
 
@@ -30,11 +30,24 @@ check "running_in_the_dev_account" {
   }
 }
 
+# Every name in this repo comes from this one block, so the module's tag is written once. Terraform
+# takes `source` only as a literal, so a second block would mean a second copy of the tag.
+#
+# `platform` is the platform-level instance: the provider's tags, the buckets and the plan role. It
+# has no layer. Each catalog database gets a layer-scoped instance under its catalog.tf key, because
+# `glue_database` and `warehouse_prefix` both return null without a layer. Catalog keys are
+# `{domain}_{layer}`, so none can collide with `platform`.
 module "naming" {
   source = "git::https://github.com/datapointchris/terraform-aws-lakeworks-naming.git?ref=v0.2.0"
 
+  for_each = merge(
+    { platform = { domain = "platform", layer = "" } },
+    local.catalog_databases,
+  )
+
   env        = var.env
-  domain     = "platform"
+  domain     = each.value.domain
+  layer      = each.value.layer
   owner      = "platform-team"
   account_id = var.dev_account_id
 }

@@ -3,7 +3,7 @@
 # operations is the split that pays: one policy can be strict and the other permissive.
 
 resource "aws_s3_bucket" "lake" {
-  bucket = module.naming.lake_bucket
+  bucket = module.naming["platform"].lake_bucket
 
   lifecycle {
     prevent_destroy = true
@@ -11,7 +11,7 @@ resource "aws_s3_bucket" "lake" {
 }
 
 resource "aws_s3_bucket" "ops" {
-  bucket = module.naming.ops_bucket
+  bucket = module.naming["platform"].ops_bucket
 }
 
 resource "aws_s3_bucket_versioning" "lake" {

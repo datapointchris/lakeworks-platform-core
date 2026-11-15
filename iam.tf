@@ -20,7 +20,7 @@ data "aws_iam_policy_document" "plan_trust" {
 }
 
 resource "aws_iam_role" "plan" {
-  name               = module.naming.plan_role
+  name               = module.naming["platform"].plan_role
   description        = "Assumed from the management account to run terraform plan against this account. Cannot apply."
   assume_role_policy = data.aws_iam_policy_document.plan_trust.json
 }

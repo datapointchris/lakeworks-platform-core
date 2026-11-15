@@ -29,5 +29,5 @@ resource "aws_ssm_parameter" "glue_database" {
 
   # Tagged with the domain and layer it names, matching the database itself, so one query by
   # domain returns both the database and the parameter that points at it.
-  tags = module.catalog_naming[each.key].tags
+  tags = module.naming[each.key].tags
 }

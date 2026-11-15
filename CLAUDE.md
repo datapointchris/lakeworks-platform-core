@@ -23,8 +23,9 @@ The module uses hyphens for AWS resource names and underscores for anything SQL 
 not cosmetic — a hyphenated identifier forces backtick quoting in Athena and Spark on every query
 forever.
 
-Bumping the pin is an edit in both `providers.tf` and `catalog.tf`. Check they agree; two files
-resolving different tags is the failure that hides longest.
+The pin lives in the one `module "naming"` block in `providers.tf`, which `for_each` spreads over
+the platform and every catalog database. Reach a name through `module.naming[<key>]` rather than
+adding a second block, which would carry a second copy of the tag.
 
 ## Consumers read SSM, never this state
 
