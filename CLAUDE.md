@@ -19,9 +19,8 @@ concatenation anywhere in this repo is a bug even when it produces the right str
 the module is the only thing that validates the components and the only thing that receives the
 account id.
 
-The module uses hyphens for AWS resource names and underscores for anything SQL touches. That is
-not cosmetic — a hyphenated identifier forces backtick quoting in Athena and Spark on every query
-forever.
+The module uses hyphens for AWS resource names and underscores for anything SQL touches. Keep both
+separators; the README's "Names" section says why.
 
 The pin lives in the one `module "naming"` block in `providers.tf`, which `for_each` spreads over
 the platform and every catalog database. Reach a name through `module.naming[<key>]` rather than
@@ -31,25 +30,19 @@ adding a second block, which would carry a second copy of the tag.
 
 Pipeline repos find the buckets and database names through `/lakeworks/{env}/platform/...`.
 Do not add a `terraform_remote_state` data source for a consumer's benefit, and do not suggest one
-as the simpler option. Remote state hands the reader the whole state file rather than the one value
-it asked for, and couples it to output names that are this repo's business.
-
-Database parameters are nested by domain so a pipeline can fetch its own layers with one
-`GetParametersByPath` without being granted the platform prefix. Flattening that path would take
-the grant boundary with it.
+as the simpler option. Keep the database parameters nested by domain rather than flattened. The
+README's "SSM" section gives the reason for both.
 
 ## What must not be written under `warehouse/`
 
-Nothing outside a Spark or PyIceberg commit. A plain object copy there produces files the table
-metadata does not know about, which is the commonest way a lakehouse is corrupted. If a task seems
-to need a direct write, the task is wrong rather than the rule.
+Nothing outside a Spark or PyIceberg commit. The README's "The lake" section says what a direct
+write does. If a task seems to need one, the task is wrong rather than the rule.
 
 ## Adding a domain or a layer
 
 `catalog.tf` iterates domains against layers. `raw` is deliberately absent from the layer list and
-`platform` is deliberately absent from the domains that get databases — `platform` is
-infrastructure rather than a domain team, though it stays a valid tag value for cost attribution.
-Adding either back is a decision, not a fill-in-the-gap.
+`platform` is deliberately absent from the domains that get databases. The README's "The catalog"
+section gives the reason for each. Adding either back is a decision, not a fill-in-the-gap.
 
 Every catalog change should be checked against `catalog.tftest.hcl`, which runs in CI and under
 `terraform test`.
