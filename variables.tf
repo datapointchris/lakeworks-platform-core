@@ -10,7 +10,7 @@ variable "env" {
 }
 
 variable "region" {
-  description = "The one region. An SCP denies the others."
+  description = "Region the AWS provider creates every resource in. The region lock that bounds it is an SCP in lakeworks-platform-bootstrap, described in the README under \"Starting from scratch\". The region in backend.tf is the state bucket's, and the aws-region in the plan workflow is where CI exchanges its OIDC token, so neither follows this one."
   type        = string
   default     = "us-east-2"
 }
