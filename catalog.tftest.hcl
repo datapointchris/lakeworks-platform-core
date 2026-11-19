@@ -30,9 +30,10 @@ override_data {
 run "catalog_shape" {
   command = plan
 
+  # One database per domain team and layer: every domain but `platform`, times every layer.
   assert {
-    condition     = length(aws_glue_catalog_database.this) == 12
-    error_message = "expected 12 databases, got ${length(aws_glue_catalog_database.this)}"
+    condition     = length(aws_glue_catalog_database.this) == length([for d in var.domains : d if d != "platform"]) * length(var.layers)
+    error_message = "expected ${length([for d in var.domains : d if d != "platform"]) * length(var.layers)} databases, got ${length(aws_glue_catalog_database.this)}"
   }
 
   # `platform` is in var.domains for its tag value and is filtered out of the catalog loop.
