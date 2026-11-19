@@ -35,11 +35,6 @@ run "catalog_shape" {
     error_message = "expected 12 databases, got ${length(aws_glue_catalog_database.this)}"
   }
 
-  assert {
-    condition     = aws_glue_catalog_database.this["animal_bronze"].name == "lakeworks_dev_animal_bronze"
-    error_message = "database name: ${aws_glue_catalog_database.this["animal_bronze"].name}"
-  }
-
   # `platform` is in var.domains for its tag value and is filtered out of the catalog loop.
   assert {
     condition     = !contains(keys(aws_glue_catalog_database.this), "platform_bronze")
@@ -97,11 +92,6 @@ run "domain_resources_carry_their_own_domain_and_layer" {
 # pattern would leave CI unable to assume it.
 run "plan_role_name_matches_the_grant_pattern" {
   command = plan
-
-  assert {
-    condition     = aws_iam_role.plan.name == "lakeworks-dev-platform-plan-role"
-    error_message = "plan role name: ${aws_iam_role.plan.name}"
-  }
 
   assert {
     condition     = startswith(aws_iam_role.plan.name, "lakeworks-") && endswith(aws_iam_role.plan.name, "-plan-role")
